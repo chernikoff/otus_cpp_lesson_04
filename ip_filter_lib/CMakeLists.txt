@@ -1,6 +1,7 @@
 add_library(ip_filter_lib
   src/string_utils.cpp
   src/ip_v4.cpp
+  src/ip_pool.cpp
   )
 
 set_target_properties(ip_filter_lib

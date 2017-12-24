@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <vector>
+#include <string>
 #include <stdexcept>
 #include <ip_filter/ip_v4.h>
+#include <ip_filter/ip_pool.h>
 
 TEST(ip_v4, constuction)
 {
@@ -16,6 +19,31 @@ TEST(ip_v4, constuction)
   EXPECT_THROW(ip_v4::make("192.168.0.l"), std::logic_error);
   EXPECT_THROW(ip_v4::make("it_s_word"), std::logic_error);
   EXPECT_THROW(ip_v4::make("192.16.8.4.43"), std::logic_error);
+}
+
+TEST(ip_pool, reverse_sort)
+{
+  ip_pool pool {
+    ip_v4::make("1.1.1.1"),
+    ip_v4::make("192.168.1.1"),
+    ip_v4::make("192.168.1.2"),
+    ip_v4::make("200.1.5.0")
+  };
+
+  pool = pool.reverse_sort();
+
+  std::vector< std::string > template_{
+    "200.1.5.0",
+    "192.168.1.2",
+    "192.168.1.1",
+    "1.1.1.1"
+  };
+
+  for (auto it = std::make_pair(std::begin(pool), std::begin(template_)),
+         end = std::make_pair(std::end(pool), std::end(template_));
+       it.first != end.first; ++it.first, ++it.second) {
+    EXPECT_EQ(it.first->to_string(), *it.second);
+  }
 }
 
 int main(int argc, char **argv)
