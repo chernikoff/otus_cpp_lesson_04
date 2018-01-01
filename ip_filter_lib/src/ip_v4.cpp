@@ -26,11 +26,11 @@ ip_v4 ip_v4::make(std::string const & string)
   ip_v4::bytes_type bytes;
   auto ip_parted = split(string, '.');
 
-  if (ip_parted.size() != array_size< decltype(bytes) >::size) {
+  if (ip_parted.size() != array_size(bytes)) {
     throw std::logic_error(invalid_ip_msg);
   }
 
-  for (size_t i = 0, size = array_size< decltype(bytes) >::size;
+  for (size_t i = 0, size = array_size(bytes);
        i != size; ++i) {
     auto value = std::stoi(ip_parted[i]);
     if (value < 0 || value > 255) { throw std::logic_error(invalid_ip_msg); }
