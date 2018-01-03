@@ -18,13 +18,20 @@ public:
   using container_type = std::vector< ip_v4 >;
 
   ip_pool();
+  ip_pool(ip_pool && );
+  ip_pool(ip_pool const &);
   explicit ip_pool(container_type const &);
   explicit ip_pool(container_type &&);
   explicit ip_pool(std::initializer_list< ip_v4> list);
   ~ip_pool();
 
+  ip_pool & operator=(ip_pool &&);
+  ip_pool & operator=(ip_pool const &);
+
   auto begin() { return std::begin(addresses_); }
   auto end() { return std::end(addresses_); }
+  auto begin() const { return std::begin(addresses_); }
+  auto end() const { return std::end(addresses_); }
 
   auto size() const { return addresses_.size(); }
   void push_back(ip_v4 const &);
@@ -42,8 +49,12 @@ public:
   template< typename CharT, typename Traits >
   friend decltype(auto) operator<<(std::basic_ostream< CharT, Traits > & os, ip_pool const & pool)
   {
-    for (auto ip : pool.addresses_) {
-      os << ip << '\n';
+    for (auto begin = std::begin(pool), end = std::end(pool), it = begin;
+         it != end; ++it) {
+      if (it != begin) {
+        os << "\n";
+      }
+      os << *it;
     }
     return os;
   }
@@ -87,7 +98,7 @@ constexpr auto apply_checkers(Checkers const & checkers, Array const & array, Op
     });
 }
 
-}
+} // namespace detail
 
 template < typename ... Args >
 ip_pool ip_pool::filter(Args const & ... args) const
@@ -117,7 +128,7 @@ ip_pool ip_pool::filter(Args const & ... args) const
 template< typename T >
 ip_pool ip_pool::filter_any(T const & value) const
 {
-  auto checkers = index_apply<array_size(ip_v4::bytes_type())>(
+  auto checkers = index_apply< array_size(ip_v4::bytes_type()) >(
       [&value](auto ... Is) {
         return std::make_tuple(((void)Is, std::bind(std::equal_to<>(), value, std::placeholders::_1)) ... );
       });
