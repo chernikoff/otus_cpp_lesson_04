@@ -6,6 +6,7 @@
 #include <initializer_list>
 #include <tuple>
 #include <functional>
+#include <type_traits>
 
 #include "ip_v4.h"
 #include "array_size.h"
@@ -31,6 +32,8 @@ public:
 
   template< typename ... Args >
   ip_pool filter(Args const & ...) const;
+
+  ip_pool filter() const { return *this; }
 
   template< typename T >
   ip_pool filter_any(T) const;
@@ -95,8 +98,6 @@ ip_pool ip_pool::filter(Args const & ... args) const
 {
   static_assert(sizeof ... (Args) <= array_size(ip_v4::bytes_type()),
                 "The number of args is greater then number of otcets");
-
-  if (sizeof ... (Args) == 0) return *this;
 
   auto checkers = detail::make_checkers(args...);
 

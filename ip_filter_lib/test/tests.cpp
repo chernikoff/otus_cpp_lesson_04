@@ -58,9 +58,12 @@ TEST(ip_pool, filter)
     ip_v4::make("200.1.5.0")
   };
 
-  auto filtred = pool.filter(200);
-
-  std::vector< std::string > template_{
+  auto filtred = pool.filter();
+  std::vector< std:: string > template_ = {
+    "1.1.1.1",
+    "192.168.1.1",
+    "192.172.4.44",
+    "192.168.1.2",
     "200.1.5.0"
   };
 
@@ -71,7 +74,15 @@ TEST(ip_pool, filter)
              end = std::make_pair(std::end(filtred), std::end(template_));
          it.first != end.first; ++it.first, ++it.second) {
       EXPECT_EQ(it.first->to_string(), *it.second);
-  }
+    }
+  };
+
+  test_routine();
+
+  filtred = pool.filter(200);
+
+  template_ = {
+    "200.1.5.0"
   };
 
   test_routine();
