@@ -11,11 +11,6 @@ install:
   - sudo apt-get install -qq g++-6
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90
   - sudo apt-get install -qq libgtest-dev
-  - cd /usr/src/gtest
-  - sudo cmake .
-  - sudo cmake --build .
-  - sudo mv libgtest* /usr/lib/
-  - cd "${TRAVIS_BUILD_DIR}"
     
 script:
   - cmake .
