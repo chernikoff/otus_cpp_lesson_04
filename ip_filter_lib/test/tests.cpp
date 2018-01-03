@@ -39,11 +39,50 @@ TEST(ip_pool, reverse_sort)
     "1.1.1.1"
   };
 
+  EXPECT_EQ(pool.size(), template_.size());
+
   for (auto it = std::make_pair(std::begin(pool), std::begin(template_)),
          end = std::make_pair(std::end(pool), std::end(template_));
        it.first != end.first; ++it.first, ++it.second) {
     EXPECT_EQ(it.first->to_string(), *it.second);
   }
+}
+
+TEST(ip_pool, filter)
+{
+  ip_pool pool {
+    ip_v4::make("1.1.1.1"),
+    ip_v4::make("192.168.1.1"),
+    ip_v4::make("192.172.4.44"),
+    ip_v4::make("192.168.1.2"),
+    ip_v4::make("200.1.5.0")
+  };
+
+  auto filtred = pool.filter(200);
+
+  std::vector< std::string > template_{
+    "200.1.5.0"
+  };
+
+  auto test_routine = [&]() {
+    EXPECT_EQ(filtred.size(), template_.size());
+
+    for (auto it = std::make_pair(std::begin(filtred), std::begin(template_)),
+             end = std::make_pair(std::end(filtred), std::end(template_));
+         it.first != end.first; ++it.first, ++it.second) {
+      EXPECT_EQ(it.first->to_string(), *it.second);
+  }
+  };
+
+  test_routine();
+
+  filtred = pool.filter(192, 168);
+  template_ = {
+    "192.168.1.1",
+    "192.168.1.2"
+  };
+
+  test_routine();
 }
 
 int main(int argc, char **argv)
