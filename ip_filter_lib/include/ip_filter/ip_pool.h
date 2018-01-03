@@ -10,6 +10,7 @@
 
 #include "ip_v4.h"
 #include "array_size.h"
+#include "index_apply.h"
 
 class ip_pool
 {
@@ -36,7 +37,7 @@ public:
   ip_pool filter() const { return *this; }
 
   template< typename T >
-  ip_pool filter_any(T) const;
+  ip_pool filter_any(T const &) const;
 
   template< typename CharT, typename Traits >
   friend decltype(auto) operator<<(std::basic_ostream< CharT, Traits > & os, ip_pool const & pool)
@@ -53,33 +54,28 @@ private:
 
 namespace detail {
 
-template < typename ... Args >
-auto make_checkers(Args ... args)
-{
-  return std::make_tuple(std::bind(std::equal_to<>(), args, std::placeholders::_1) ... );
-}
-
-template < typename F, size_t ... Is >
-constexpr auto index_apply_impl(F f,
-                                std::index_sequence< Is ... >) {
-  return f(std::integral_constant< size_t, Is >{} ... );
-}
-
-template < size_t N, typename F >
-constexpr auto index_apply(F f) {
-  return index_apply_impl(f, std::make_index_sequence< N >{});
-}
-
 template< typename T >
-auto var_and(T const & arg)
+constexpr auto var_and(T const & arg)
 {
   return arg;
 }
 
 template< typename T, typename ... Args >
-auto var_and(T const & arg, Args const & ... args)
+constexpr auto var_and(T const & arg, Args const & ... args)
 {
   return arg && var_and(args...);
+}
+
+template< typename T >
+constexpr auto var_or(T const & arg)
+{
+  return arg;
+}
+
+template< typename T, typename ... Args >
+constexpr auto var_or(T const & arg, Args const & ... args)
+{
+  return arg || var_or(args...);
 }
 
 template< typename Checkers, typename Array, typename Operation >
@@ -99,7 +95,11 @@ ip_pool ip_pool::filter(Args const & ... args) const
   static_assert(sizeof ... (Args) <= array_size(ip_v4::bytes_type()),
                 "The number of args is greater then number of otcets");
 
-  auto checkers = detail::make_checkers(args...);
+  auto tuple = std::make_tuple(args...);
+  auto checkers = index_apply< std::tuple_size< decltype(tuple) >::value >(
+      [&tuple](auto ... Is) {
+        return std::make_tuple(std::bind(std::equal_to<>(), std::get< Is >(tuple), std::placeholders::_1) ... );
+      });
 
   container_type container;
 
@@ -108,6 +108,27 @@ ip_pool ip_pool::filter(Args const & ... args) const
                  return detail::apply_checkers(checkers, it.to_bytes(),
                                                [](auto const & ... args) {
                                                  return detail::var_and(args...);
+                                               });
+               });
+
+  return ip_pool(container);
+}
+
+template< typename T >
+ip_pool ip_pool::filter_any(T const & value) const
+{
+  auto checkers = index_apply<array_size(ip_v4::bytes_type())>(
+      [&value](auto ... Is) {
+        return std::make_tuple(((void)Is, std::bind(std::equal_to<>(), value, std::placeholders::_1)) ... );
+      });
+
+  container_type container;
+
+  std::copy_if(std::begin(addresses_), std::end(addresses_), std::back_inserter(container),
+               [&checkers](auto const & it) {
+                 return detail::apply_checkers(checkers, it.to_bytes(),
+                                               [](auto const & ... args) {
+                                                 return detail::var_or(args...);
                                                });
                });
 
